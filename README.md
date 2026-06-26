@@ -15,14 +15,46 @@ Before you begin, make sure you have the following installed:
 
 ## 1. Download the app
 
-Clone the repository to your machine:
+> **Important:** Use the **`broken`** branch for this project. A normal `git clone` checks out **`main`** by default — that is not the refactor exercise version. Follow the steps below.
+
+The **`broken`** branch contains intentional junior-level code patterns for refactoring practice. See [`FIXME.md`](FIXME.md) for what to fix and how to run unit tests.
+
+### Clone the `broken` branch (recommended)
+
+Clone and check out `broken` in one step:
 
 ```bash
-git clone <your-repo-url>
+git clone -b broken <your-repo-url>
 cd stay-n-go-airbnb
 ```
 
-Or download the project as a ZIP from your repository host and extract it, then open a terminal in the project folder.
+Confirm you are on the right branch:
+
+```bash
+git branch --show-current
+```
+
+You should see `broken`.
+
+### If you already cloned `main` by mistake
+
+Switch to `broken` and pull the latest:
+
+```bash
+cd stay-n-go-airbnb
+git fetch origin
+git checkout broken
+git pull origin broken
+```
+
+### Optional — clean `main` branch
+
+Only use `main` if you want the non-exercise version of the app:
+
+```bash
+git clone -b main <your-repo-url>
+cd stay-n-go-airbnb
+```
 
 ---
 
