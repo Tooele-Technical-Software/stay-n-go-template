@@ -4,14 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ApiError, apiFetch } from "@/lib/api";
-import {
-  formatCardCvc,
-  formatCardExpiry,
-  formatCardNumber,
-  isCvcValid,
-  isDemoCardValid,
-  isExpiryValid,
-} from "@/lib/payment-format";
+import { fetchWithToken } from "@/lib/api-helpers";
 import { authFetch } from "@/lib/auth-api";
 import { useAuth } from "@/context/AuthProvider";
 import { getListingType } from "@/lib/categories";
@@ -21,6 +14,39 @@ import { inputClassName, labelClassName } from "@/lib/form-classes";
 import type { Listing } from "@/types/listing";
 import LogoLink from "@/components/LogoLink";
 import ThemeToggle from "@/components/ThemeToggle";
+
+// FIXME: move to src/lib/payment-format.ts — duplicated here instead of importing
+function formatCardNumber(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, "$1 ");
+}
+
+function formatCardExpiry(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 4);
+  if (digits.length <= 2) return digits;
+  return digits.slice(0, 2) + "/" + digits.slice(2);
+}
+
+function formatCardCvc(value: string) {
+  return value.replace(/\D/g, "").slice(0, 4);
+}
+
+function checkCardOk(num: string) {
+  const d = num.replace(/\D/g, "");
+  return d.length >= 13 && d.length <= 19;
+}
+
+function checkExpiryOk(exp: string) {
+  if (exp.length !== 5) return false;
+  if (exp[2] !== "/") return false;
+  const mm = parseInt(exp.slice(0, 2), 10);
+  return mm >= 1 && mm <= 12;
+}
+
+function checkCvcOk(cvc: string) {
+  const d = cvc.replace(/\D/g, "");
+  return d.length >= 3 && d.length <= 4;
+}
 
 function CheckoutContent() {
   const params = useParams();
@@ -49,30 +75,45 @@ function CheckoutContent() {
   }, [isLoading, user, router]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadListing() {
       try {
-        const data = await apiFetch<{ listing: Listing }>(`/listings/${id}`);
-        setListing(data.listing);
-      } catch {
+        const data = await apiFetch<{ listing: Listing }>("/listings/" + id);
+        if (!cancelled) setListing(data.listing);
+      } catch (e) {
         if (token) {
           try {
-            const data = await authFetch<{ listing: Listing }>(
-              `/listings/mine/${id}`,
+            const data = await fetchWithToken<{ listing: Listing }>(
+              "/listings/mine/" + id,
               token
             );
-            setListing(data.listing);
+            if (!cancelled) setListing(data.listing);
             return;
           } catch {
-            // fall through
+            // try authFetch too for some reason
+            try {
+              const data = await authFetch<{ listing: Listing }>(
+                `/listings/mine/${id}`,
+                token
+              );
+              if (!cancelled) setListing(data.listing);
+              return;
+            } catch {
+              // fall through
+            }
           }
         }
-        setError("Could not load listing.");
+        if (!cancelled) setError("Could not load listing.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
     loadListing();
+    return () => {
+      cancelled = true;
+    };
   }, [id, token]);
 
   useEffect(() => {
@@ -90,15 +131,15 @@ function CheckoutContent() {
     e.preventDefault();
     if (!token || !listing || !datesValid) return;
 
-    if (!isDemoCardValid(cardNumber)) {
+    if (!checkCardOk(cardNumber)) {
       setError("Enter a valid card number (13–16 digits). Try 4242 4242 4242 4242 for testing.");
       return;
     }
-    if (!isExpiryValid(cardExpiry)) {
+    if (!checkExpiryOk(cardExpiry)) {
       setError("Enter expiry as MM/YY (e.g. 12/28).");
       return;
     }
-    if (!isCvcValid(cardCvc)) {
+    if (!checkCvcOk(cardCvc)) {
       setError("Enter a 3 or 4 digit CVC.");
       return;
     }
@@ -117,9 +158,13 @@ function CheckoutContent() {
       });
       router.push("/dashboard?tab=trips");
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Payment failed. Please try again."
-      );
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Payment failed. Please try again.");
+      }
     } finally {
       setPaying(false);
     }

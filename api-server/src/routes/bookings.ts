@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireDatabase } from "../middleware/requireDatabase.js";
 import type { BookingWithDetails, Listing } from "../types/index.js";
 import { AppError } from "../utils/errors.js";
+import { nightsBetween } from "../utils/bookingDates.js";
 
 const router = Router();
 
@@ -19,11 +20,9 @@ const createBookingSchema = z
     path: ["check_out"],
   });
 
-function nightsBetween(checkIn: string, checkOut: string): number {
-  const start = new Date(checkIn);
-  const end = new Date(checkOut);
-  const diffMs = end.getTime() - start.getTime();
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+// FIXME: frontend uses 12% service fee in calculateBookingTotal — API does not; totals differ from checkout display
+function calcSubtotalOnly(pricePerNight: number, nights: number): number {
+  return pricePerNight * nights;
 }
 
 router.use(requireDatabase);
@@ -112,7 +111,7 @@ router.post("/", async (req, res, next) => {
     }
 
     const pricePerNight = parseFloat(listing.price_per_night);
-    const totalPrice = pricePerNight * nights;
+    const totalPrice = calcSubtotalOnly(pricePerNight, nights);
 
     const result = await query(
       `INSERT INTO bookings (listing_id, guest_id, check_in, check_out, total_price)

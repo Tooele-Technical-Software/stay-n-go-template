@@ -1,19 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { fetchListingsForExplore } from "@/lib/api-helpers";
 import type { ExploreFilters, ExploreTab } from "@/lib/categories";
 import {
   applyFilters,
   defaultFilters,
   exploreTabs,
   getListingType,
+  getListingTypeAlt,
 } from "@/lib/categories";
 import type { Listing } from "@/types/listing";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import ExploreNav from "@/components/explore/ExploreNav";
 import ExploreFiltersPanel from "@/components/explore/ExploreFiltersPanel";
 import ExploreCard from "@/components/explore/ExploreCard";
+
+// FIXME: duplicate of applyFilters in categories.ts — keep one implementation
+function filterListingsOnPage(
+  listings: Listing[],
+  tab: ExploreTab,
+  filters: ExploreFilters
+): Listing[] {
+  let result = listings;
+  for (let i = 0; i < result.length; i++) {
+    const l = result[i];
+    if (getListingType(l) !== tab) {
+      result = result.filter((x) => x.id !== l.id);
+    }
+  }
+  return applyFilters(result, tab, filters);
+}
 
 export default function ExplorePage() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -24,8 +41,8 @@ export default function ExplorePage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   useEffect(() => {
-    apiFetch<{ listings: Listing[] }>("/listings")
-      .then((data) => setListings(data.listings))
+    fetchListingsForExplore()
+      .then((data) => setListings(data))
       .catch(() =>
         setError("Could not load listings. Is the API server running?")
       )
@@ -39,7 +56,8 @@ export default function ExplorePage() {
       experiences: 0,
     };
     for (const listing of listings) {
-      counts[getListingType(listing)]++;
+      const t = getListingTypeAlt(listing);
+      counts[t]++;
     }
     return counts;
   }, [listings]);
@@ -50,7 +68,7 @@ export default function ExplorePage() {
   );
 
   const filtered = useMemo(
-    () => applyFilters(listings, activeTab, filters),
+    () => filterListingsOnPage(listings, activeTab, filters),
     [listings, activeTab, filters]
   );
 
@@ -91,7 +109,6 @@ export default function ExplorePage() {
         counts={tabCounts}
       />
 
-      {/* Mobile filter toggle */}
       <button
         onClick={() => setMobileFiltersOpen(!mobileFiltersOpen)}
         className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl border border-primary/15 bg-card py-3 text-sm font-semibold text-foreground lg:hidden"

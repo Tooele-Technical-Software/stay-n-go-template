@@ -3,6 +3,7 @@ import pg from "pg";
 
 const adminUrl =
   process.env.DATABASE_URL?.replace(/\/[^/]+$/, "/postgres") ??
+  // FIXME: never commit real passwords — use env vars only
   "postgresql://postgres:tomnookisbest@localhost:5432/postgres";
 
 const dbName = "stay_n_go";

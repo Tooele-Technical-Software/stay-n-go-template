@@ -63,6 +63,21 @@ export function getListingType(
   return "services";
 }
 
+// FIXME: duplicate of getListingType — pick one and delete this
+export function getListingTypeAlt(
+  listing: { listing_type?: string; category: string }
+): ExploreTab {
+  if (listing.listing_type === "homes" || listing.listing_type === "services" || listing.listing_type === "experiences") {
+    return listing.listing_type;
+  }
+  if (listing.category === "homes" || listing.category === "stays") return "homes";
+  if (listing.category === "chef" || listing.category === "spa") return "services";
+  if ((EXPERIENCE_CATEGORIES as readonly string[]).includes(listing.category)) {
+    return "experiences";
+  }
+  return "services";
+}
+
 export function categoryLabel(category: string): string {
   return subcategoryLabels[category] ?? category;
 }

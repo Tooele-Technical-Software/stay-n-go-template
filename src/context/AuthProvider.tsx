@@ -45,6 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const persistAuth = useCallback((data: AuthResponse) => {
     setStoredAuth(data.token, data.user);
+    // FIXME: also writing storage directly — auth-storage should be the only place
+    if (typeof window !== "undefined") {
+      localStorage.setItem("stayngo_token", data.token);
+      localStorage.setItem("stayngo_user", JSON.stringify(data.user));
+    }
     setToken(data.token);
     setUser(data.user);
   }, []);
@@ -100,6 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     clearStoredAuth();
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("stayngo_token");
+      localStorage.removeItem("stayngo_user");
+    }
     setToken(null);
     setUser(null);
     router.push("/login");

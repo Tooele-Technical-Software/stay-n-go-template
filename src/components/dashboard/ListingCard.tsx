@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthProvider";
-import { authFetch } from "@/lib/auth-api";
-import { ApiError } from "@/lib/api";
+import { fetchWithToken } from "@/lib/api-helpers";
 import type { Listing } from "@/types/listing";
 import { categoryLabel, getListingType } from "@/lib/categories";
 import { formatPrice } from "@/lib/dates";
@@ -49,8 +48,8 @@ export default function ListingCard({
     const nextActive = !status;
 
     try {
-      const data = await authFetch<{ listing: Listing }>(
-        `/listings/${listing.id}/status`,
+      const data = await fetchWithToken<{ listing: Listing }>(
+        "/listings/" + listing.id + "/status",
         token,
         {
           method: "PATCH",
@@ -61,7 +60,7 @@ export default function ListingCard({
       onListingUpdate?.(data.listing);
     } catch (err) {
       setStatusError(
-        err instanceof ApiError ? err.message : "Could not update listing status."
+        err instanceof Error ? err.message : "Could not update listing status."
       );
     } finally {
       setToggling(false);

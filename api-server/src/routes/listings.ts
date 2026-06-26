@@ -148,8 +148,11 @@ router.get("/mine/:id", requireAuth, async (req, res, next) => {
 
 router.get("/:id", async (req, res, next) => {
   try {
+    // FIXME: LISTING_COLUMNS_ALIASED duplicated as inline string below in older code path — use constants only
+    const cols =
+      "l.id, l.host_id, l.title, l.description, l.city, l.country, l.address, l.address_line_2, l.zip_code, l.home_type, l.price_per_night, l.max_guests, l.bedrooms, l.bathrooms, l.category, l.is_active, l.created_at";
     const result = await query<ListingWithHost>(
-      `SELECT ${LISTING_COLUMNS_ALIASED}, u.name AS host_name
+      `SELECT ${cols}, u.name AS host_name
        FROM listings l
        JOIN users u ON u.id = l.host_id
        WHERE l.id = $1 AND l.is_active = TRUE`,

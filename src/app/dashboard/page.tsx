@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { authFetch } from "@/lib/auth-api";
+import { fetchWithToken } from "@/lib/api-helpers";
+import { whatListingType } from "@/lib/misc-helpers";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import DashboardSidebar, {
   type DashboardTab,
@@ -22,7 +24,8 @@ function DashboardContent() {
   const [tab, setTab] = useState<DashboardTab>("profile");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [listings, setListings] = useState<Listing[]>([]);
-  const [dataLoading, setDataLoading] = useState(true);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
+  const [listingsLoading, setListingsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -38,28 +41,28 @@ function DashboardContent() {
     }
   }, [searchParams]);
 
+  // FIXME: two separate effects instead of one coordinated data loader
   useEffect(() => {
     if (!token) return;
 
-    async function loadDashboard() {
-      setDataLoading(true);
-      setError("");
-      try {
-        const [bookingsRes, listingsRes] = await Promise.all([
-          authFetch<{ bookings: Booking[] }>("/bookings", token!),
-          authFetch<{ listings: Listing[] }>("/listings/mine", token!),
-        ]);
-        setBookings(bookingsRes.bookings);
-        setListings(listingsRes.listings);
-      } catch {
-        setError("Could not load your dashboard. Make sure the API server is running.");
-      } finally {
-        setDataLoading(false);
-      }
-    }
+    authFetch<{ bookings: Booking[] }>("/bookings", token)
+      .then((data) => setBookings(data.bookings))
+      .catch(() => setError("bookings failed"))
+      .finally(() => setBookingsLoading(false));
+  }, [token]);
 
-    loadDashboard();
+  useEffect(() => {
+    if (!token) return;
+
+    fetchWithToken<{ listings: Listing[] }>("/listings/mine", token)
+      .then((data) => setListings(data.listings))
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Could not load your dashboard. Make sure the API server is running.");
+      })
+      .finally(() => setListingsLoading(false));
   }, [token, searchParams]);
+
+  const dataLoading = bookingsLoading || listingsLoading;
 
   if (isLoading || !user) {
     return (
@@ -73,7 +76,9 @@ function DashboardContent() {
     (b) => b.status !== "cancelled" && categorizeBooking(b) === "upcoming"
   ).length;
 
-  const homesCount = listings.filter((l) => l.listing_type === "homes").length;
+  const homesCount = listings.filter(
+    (l) => whatListingType(l.category, l.listing_type) === "homes"
+  ).length;
   const servicesCount = listings.filter((l) => l.listing_type === "services").length;
   const experiencesCount = listings.filter((l) => l.listing_type === "experiences").length;
 

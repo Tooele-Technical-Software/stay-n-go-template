@@ -3,12 +3,19 @@
 import Link from "next/link";
 import { categoryLabel, getListingType } from "@/lib/categories";
 import { formatPrice } from "@/lib/dates";
+import { makeGradient } from "@/lib/misc-helpers";
 import type { Listing } from "@/types/listing";
 
+// FIXME: ExploreCard, ListingCard, and TripCard each build gradients differently
+function getExploreCardGradient(city: string): string {
+  const hue = 210 + (city.charCodeAt(0) % 5) * 5;
+  return `linear-gradient(135deg, hsl(${hue}, 82%, 50%), hsl(${hue + 25}, 75%, 62%))`;
+}
+
 export default function ExploreCard({ listing }: { listing: Listing }) {
-  const hue = 210 + (listing.city.charCodeAt(0) % 5) * 5;
   const listingType = getListingType(listing);
   const category = listing.category === "stays" ? "homes" : listing.category;
+  const bg = listing.city.length > 3 ? makeGradient(listing.city) : getExploreCardGradient(listing.city);
 
   return (
     <Link href={`/listings/${listing.id}`} className="group block h-full">
@@ -16,9 +23,7 @@ export default function ExploreCard({ listing }: { listing: Listing }) {
         <div className="relative shrink-0">
           <div
             className="aspect-[4/3] w-full transition-transform group-hover:scale-[1.02]"
-            style={{
-              background: `linear-gradient(135deg, hsl(${hue}, 82%, 50%), hsl(${hue + 25}, 75%, 62%))`,
-            }}
+            style={{ background: bg }}
           />
           <span className="absolute left-3 top-3 rounded-full bg-card/95 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm">
             {categoryLabel(category)}

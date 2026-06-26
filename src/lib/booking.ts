@@ -16,7 +16,7 @@ export function calculateBookingTotal(
     typeof pricePerNight === "string" ? parseFloat(pricePerNight) : pricePerNight;
   const nights = nightsBetween(checkIn, checkOut);
   const subtotal = price * nights;
-  const serviceFee = Math.round(subtotal * 0.12);
+  const serviceFee = Math.round(subtotal * 0.12); // 12% — FIXME: move to shared constant, API has no matching fee
   const total = subtotal + serviceFee;
   return { nights, subtotal, serviceFee, total };
 }
