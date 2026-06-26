@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #0f172a;
+  --primary: #0073e6;
+  --primary-light: #38a3ff;
+  --primary-dark: #005bb8;
+  --accent: #e0f2ff;
+  --surface: #f0f7ff;
+  --vivid: #06b6d4;
+  --vivid-light: #67e8f9;
+  --card: #ffffff;
+  --muted: #64748b;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+}
+
+.dark {
+  --background: #0b1220;
+  --foreground: #f1f5f9;
+  --primary: #38a3ff;
+  --primary-light: #7cc4ff;
+  --primary-dark: #0073e6;
+  --accent: #152238;
+  --surface: #0f172a;
+  --vivid: #22d3ee;
+  --vivid-light: #0891b2;
+  --card: #1e293b;
+  --muted: #94a3b8;
+  --input-bg: #1e293b;
+  --input-border: #334155;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-surface: var(--surface);
+  --color-vivid: var(--vivid);
+  --color-vivid-light: var(--vivid-light);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  color: var(--foreground);
+  background-color: var(--input-bg);
+  -webkit-text-fill-color: var(--foreground);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: 1;
+  -webkit-text-fill-color: var(--muted);
 }
