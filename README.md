@@ -17,7 +17,12 @@ Before you begin, make sure you have the following installed:
 
 > **Important:** Use the **`broken`** branch for this project. A normal `git clone` checks out **`main`** by default — that is not the refactor exercise version. Follow the steps below.
 
-The **`broken`** branch contains intentional junior-level code patterns for refactoring practice. See [`FIXME.md`](FIXME.md) for what to fix and how to run unit tests.
+The **`broken`** branch contains intentional junior-level code patterns for refactoring practice.
+
+| Guide | What it covers |
+|-------|----------------|
+| [`FIXME.md`](FIXME.md) | What is wrong with the code |
+| [`TESTER.md`](TESTER.md) | How to write unit tests and what to cover |
 
 ### Clone the `broken` branch (recommended)
 

@@ -2,6 +2,8 @@
 
 This branch (`broken`) intentionally contains **junior-level code patterns**: duplicated logic, oversized files, inconsistent abstractions, and scattered configuration. The app should still run end-to-end, but the codebase is harder to maintain than it should be.
 
+**Looking for help?** See [`TESTER.md`](TESTER.md) for how to write unit tests.
+
 Your job is to refactor toward professional structure **without changing user-visible behavior** (unless noted as a known inconsistency below).
 
 ---
@@ -269,140 +271,22 @@ Payment validation is duplicated; checkout no longer imports `payment-format.ts`
 
 ## Unit testing
 
-Vitest is configured for both the frontend and API server. Tests live next to the code they cover as `*.test.ts` files.
+Student testing guide: **[`TESTER.md`](TESTER.md)**
 
-### Run tests
+- How to run `npm test` / `npm run test:watch`
+- Where test files live and how to name them
+- Full list of functions that need tests
+- Patterns (calculations, filters, dates, Zod schemas)
+- Checklist to complete before submitting
 
-**Frontend** (from project root):
-
-```bash
-npm test
-```
-
-Watch mode while developing:
+Quick start:
 
 ```bash
-npm run test:watch
+npm test                  # frontend
+cd api-server && npm test # API
 ```
 
-**API server**:
-
-```bash
-cd api-server
-npm test
-```
-
-### Test layout
-
-| Location | Config | Test files |
-|----------|--------|------------|
-| `src/lib/*.test.ts` | `vitest.config.ts` | Frontend pure functions |
-| `api-server/src/**/*.test.ts` | `api-server/vitest.config.ts` | API pure functions |
-
-Add new frontend tests under `src/lib/` (or `src/lib/__tests__/` if you prefer a folder). Add new API tests under `api-server/src/utils/` or next to the module being tested.
-
----
-
-### Functions with tests already (starter suite)
-
-These have basic coverage — extend them with edge cases as you refactor.
-
-| Function | File | Test file |
-|----------|------|-----------|
-| `calculateBookingTotal` | `src/lib/booking.ts` | `src/lib/booking.test.ts` |
-| `formatBookingSummary` | `src/lib/booking.ts` | `src/lib/booking.test.ts` |
-| `nightsBetween` | `src/lib/dates.ts` | `src/lib/dates.test.ts` |
-| `formatPrice` | `src/lib/dates.ts` | `src/lib/dates.test.ts` |
-| `formatDateRange` | `src/lib/dates.ts` | `src/lib/dates.test.ts` |
-| `categorizeBooking` | `src/lib/dates.ts` | `src/lib/dates.test.ts` |
-| `formatCardNumber` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `formatCardExpiry` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `formatCardCvc` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `isDemoCardValid` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `isExpiryValid` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `isCvcValid` | `src/lib/payment-format.ts` | `src/lib/payment-format.test.ts` |
-| `getListingType` | `src/lib/categories.ts` | `src/lib/categories.test.ts` |
-| `categoryLabel` | `src/lib/categories.ts` | `src/lib/categories.test.ts` |
-| `applyFilters` | `src/lib/categories.ts` | `src/lib/categories.test.ts` |
-| `parseRoomCount` | `src/lib/host-form-utils.ts` | `src/lib/host-form-utils.test.ts` |
-| `normalizePriceInput` | `src/lib/host-form-utils.ts` | `src/lib/host-form-utils.test.ts` |
-| `nightsBetween` | `api-server/src/utils/bookingDates.ts` | `api-server/src/utils/bookingDates.test.ts` |
-| `deriveListingType` | `api-server/src/utils/listingType.ts` | `api-server/src/utils/listingType.test.ts` |
-| `enrichListing` | `api-server/src/utils/listingType.ts` | `api-server/src/utils/listingType.test.ts` |
-
----
-
-### Functions you SHOULD add tests for
-
-Add these as you fix related FIXME items. Tests should lock behavior before deleting duplicates or extracting modules.
-
-#### Frontend — high priority
-
-| Function | File | Why test |
-|----------|------|----------|
-| `getListingTypeAlt` | `src/lib/categories.ts` | Prove it matches `getListingType` or document differences before deleting |
-| `applyFilters` | `src/lib/categories.ts` | More cases: max price, min guests, min bedrooms, subcategories, empty filters |
-| `countActiveFilters` | `src/lib/categories.ts` | Filter badge count on explore panel |
-| `subcategoriesForTab` | `src/lib/categories.ts` | Tab → category list mapping |
-| `cardDigitCount` | `src/lib/payment-format.ts` | Used by validation helpers |
-| `guestLabel` | `src/lib/host-form-utils.ts` | Singular/plural copy |
-| `roomLabel` | `src/lib/host-form-utils.ts` | Zero/one/many bedroom/bathroom labels |
-| `initRoomSelect` | `src/lib/host-form-utils.ts` | `8+` / `6+` custom count UI state |
-| `initGuestSelect` | `src/lib/host-form-utils.ts` | Guest dropdown default for uncommon counts |
-| Checkout inline helpers | `src/app/listings/[id]/checkout/page.tsx` | After consolidating to `payment-format.ts`, delete page copies and keep one test suite |
-
-#### Frontend — after refactor / delete junk
-
-| Function | File | Why test |
-|----------|------|----------|
-| `nightsBetweenCopy` | `src/lib/misc-helpers.ts` | Delete or merge with `dates.ts` — test parity first |
-| `formatMoney` | `src/lib/misc-helpers.ts` | Differs from `formatPrice` — decide which to keep |
-| `whatListingType` | `src/lib/misc-helpers.ts` | Duplicate listing type logic |
-| `makeGradient` / `getHueForCity` | `src/lib/misc-helpers.ts` | After extracting shared placeholder component |
-
-#### API — high priority
-
-| Function | Area | Why test |
-|----------|------|----------|
-| `createBookingSchema` | `api-server/src/routes/bookings.ts` | Invalid dates, `check_out` before `check_in`, bad UUID |
-| `createListingSchema` | `api-server/src/routes/listings.ts` | Homes require address, zip, home_type |
-| `updateListingSchema` | `api-server/src/routes/listings.ts` | Partial updates, homes validation |
-| `signupSchema` / `loginSchema` | `api-server/src/routes/users.ts` | Email/password rules |
-| `calcSubtotalOnly` | `api-server/src/routes/bookings.ts` | Extract and align with frontend fee policy |
-
-#### API — integration (second wave)
-
-| Area | Why test |
-|------|----------|
-| `POST /users/signup` + `POST /users/login` | Auth flow returns JWT |
-| `GET /listings` | Only active listings returned |
-| `POST /bookings` | Total price, overlap conflict `409` |
-| `PATCH /listings/:id/status` | Draft/active toggle |
-
-Use **supertest** against the Express app with a mocked or test database for integration tests.
-
----
-
-### Your turn — add new tests here
-
-Use this checklist when contributing tests. Create a new `*.test.ts` file (or extend an existing one) and check items off in your PR.
-
-- [ ] `countActiveFilters` — `src/lib/categories.test.ts`
-- [ ] `subcategoriesForTab` — `src/lib/categories.test.ts`
-- [ ] `getListingTypeAlt` vs `getListingType` parity — `src/lib/categories.test.ts`
-- [ ] `guestLabel` and `roomLabel` — `src/lib/host-form-utils.test.ts`
-- [ ] `initRoomSelect` and `initGuestSelect` — `src/lib/host-form-utils.test.ts`
-- [ ] `applyFilters` edge cases (max price, guests, bedrooms) — `src/lib/categories.test.ts`
-- [ ] Booking Zod schemas — `api-server/src/routes/bookings.test.ts` (new file)
-- [ ] Listing Zod schemas — `api-server/src/routes/listings.test.ts` (new file)
-- [ ] User Zod schemas — `api-server/src/routes/users.test.ts` (new file)
-- [ ] After API refactor: service-layer booking total matches checkout display
-
-**Tips**
-
-- Prefer testing **pure functions** (no React, no DB) first.
-- Use `vi.useFakeTimers()` for date-dependent logic (see `dates.test.ts`).
-- When two functions duplicate logic (`nightsBetween` frontend vs API), write tests that document expected parity — then unify implementations until both suites pass.
+Add tests as you work through the FIXME items. Run both test commands before you submit.
 
 ---
 
@@ -415,7 +299,7 @@ Use this checklist when contributing tests. Create a new `*.test.ts` file (or ex
 5. **Shared UI** (#2) — polish
 6. **Constants & secrets** (#6) — security hygiene
 7. **Auth cleanup** (#9)
-8. **Unit testing** — extend starter tests (see Unit testing section); add schema and integration tests
+8. **Unit testing** — see [`TESTER.md`](TESTER.md); add missing tests as you refactor
 
 ---
 
@@ -438,6 +322,7 @@ After refactoring, verify:
 | Path | Role in exercise |
 |------|------------------|
 | `FIXME.md` | This guide |
+| `TESTER.md` | Student unit test guide |
 | `src/lib/app-config.ts` | Duplicate API URL config |
 | `src/lib/api-helpers.ts` | Second fetch wrapper |
 | `src/lib/misc-helpers.ts` | Junk-drawer utilities |

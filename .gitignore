@@ -13,6 +13,10 @@
 # testing
 /coverage
 
+# instructor answer keys (keep local — not for student repo)
+FIXED.md
+TESTING.md
+
 # next.js
 /.next/
 /out/
