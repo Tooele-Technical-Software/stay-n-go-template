@@ -1,0 +1,207 @@
+# Upload this file to GitHub Classroom → Assignment → Add autograding → Custom YAML
+# Do not commit to the student template repo unless you want the workflow visible there.
+#
+# Requires: template repo includes the `main` branch (reference) and `broken` (starter).
+# Students work on `broken`; tests check refactor fixes from FIXME.md + TESTER.md.
+
+name: Autograding Tests
+
+on:
+  - push
+  - repository_dispatch
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Frontend unit tests (Vitest)
+        id: frontend-tests
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Frontend unit tests (Vitest)
+          setup-command: npm ci
+          command: npm test
+          timeout: 10
+          max-score: 20
+
+      - name: API unit tests (Vitest)
+        id: api-tests
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: API unit tests (Vitest)
+          setup-command: cd api-server && npm ci
+          command: cd api-server && npm test
+          timeout: 10
+          max-score: 15
+
+      - name: Removed api-helpers junk module
+        id: removed-api-helpers
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Removed api-helpers.ts
+          setup-command: ""
+          command: test ! -f src/lib/api-helpers.ts
+          timeout: 1
+          max-score: 5
+
+      - name: Removed misc-helpers junk module
+        id: removed-misc-helpers
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Removed misc-helpers.ts
+          setup-command: ""
+          command: test ! -f src/lib/misc-helpers.ts
+          timeout: 1
+          max-score: 5
+
+      - name: No imports from api-helpers
+        id: no-api-helpers-imports
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: No imports from api-helpers
+          setup-command: ""
+          command: "! git grep -q 'api-helpers' -- src api-server/src"
+          timeout: 1
+          max-score: 3
+
+      - name: Checkout imports payment-format
+        id: checkout-payment-format
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Checkout uses payment-format (not inline card helpers)
+          setup-command: ""
+          command: grep -q '@/lib/payment-format' 'src/app/listings/[id]/checkout/page.tsx' && ! grep -q 'function checkCardOk' 'src/app/listings/[id]/checkout/page.tsx'
+          timeout: 1
+          max-score: 8
+
+      - name: Explore page cleaned
+        id: explore-cleaned
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Explore page cleaned (no redundant filter loop)
+          setup-command: ""
+          command: "! grep -q 'filterListingsOnPage' src/app/explore/page.tsx"
+          timeout: 1
+          max-score: 5
+
+      - name: Explore uses getListingType only
+        id: explore-listing-type
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Explore uses getListingType (not getListingTypeAlt)
+          setup-command: ""
+          command: "! grep -q 'getListingTypeAlt' src/app/explore/page.tsx"
+          timeout: 1
+          max-score: 4
+
+      - name: AuthProvider without duplicate localStorage writes
+        id: auth-no-dup-storage
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: AuthProvider without duplicate localStorage writes
+          setup-command: ""
+          command: "! grep -q 'localStorage.setItem(\"stayngo_token\"' src/context/AuthProvider.tsx"
+          timeout: 1
+          max-score: 5
+
+      - name: Dashboard without whatListingType
+        id: dashboard-listing-type
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Dashboard without whatListingType helper
+          setup-command: ""
+          command: "! grep -q 'whatListingType' src/app/dashboard/page.tsx"
+          timeout: 1
+          max-score: 4
+
+      - name: God components reduced
+        id: hooks-or-slim-checkout
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Extracted hooks or slimmer checkout page
+          setup-command: ""
+          command: test -f src/hooks/useCheckout.ts || test -f src/hooks/useExploreListings.ts || test -f src/hooks/useDashboardData.ts || test "$(wc -l < 'src/app/listings/[id]/checkout/page.tsx')" -lt 320
+          timeout: 1
+          max-score: 3
+
+      - name: Booking fee constant extracted
+        id: booking-fee-constant
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Booking fee constant extracted
+          setup-command: ""
+          command: grep -q BOOKING_SERVICE_FEE_RATE src/lib/booking.ts || test -f src/lib/constants.ts
+          timeout: 1
+          max-score: 4
+
+      - name: Unified error handling
+        id: unified-errors
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Unified error handling
+          setup-command: ""
+          command: test -f src/lib/errors.ts || grep -q getErrorMessage src/app/dashboard/page.tsx
+          timeout: 1
+          max-score: 3
+
+      - name: Shared listing placeholder
+        id: shared-placeholder
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Shared listing placeholder (not triple copy-paste)
+          setup-command: ""
+          command: test -f src/lib/listing-placeholder.ts || test -f src/components/listing/ListingPlaceholderImage.tsx || ! grep -q misc-helpers src/components/explore/ExploreCard.tsx
+          timeout: 1
+          max-score: 3
+
+      - name: API booking total aligned with frontend fee
+        id: api-booking-fee
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: API booking total includes fee logic
+          setup-command: ""
+          command: test -f api-server/src/utils/bookingPricing.ts || grep -q calculateBookingTotal api-server/src/routes/bookings.ts || ! grep -q calcSubtotalOnly api-server/src/routes/bookings.ts
+          timeout: 1
+          max-score: 3
+
+      - name: Extended tests from TESTER.md
+        id: extended-tests
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: Extended tests from TESTER.md
+          setup-command: ""
+          command: grep -q countActiveFilters src/lib/categories.test.ts && grep -q guestLabel src/lib/host-form-utils.test.ts
+          timeout: 1
+          max-score: 10
+
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          FRONTEND-TESTS_RESULTS: "${{ steps.frontend-tests.outputs.result }}"
+          API-TESTS_RESULTS: "${{ steps.api-tests.outputs.result }}"
+          REMOVED-API-HELPERS_RESULTS: "${{ steps.removed-api-helpers.outputs.result }}"
+          REMOVED-MISC-HELPERS_RESULTS: "${{ steps.removed-misc-helpers.outputs.result }}"
+          NO-API-HELPERS-IMPORTS_RESULTS: "${{ steps.no-api-helpers-imports.outputs.result }}"
+          CHECKOUT-PAYMENT-FORMAT_RESULTS: "${{ steps.checkout-payment-format.outputs.result }}"
+          EXPLORE-CLEANED_RESULTS: "${{ steps.explore-cleaned.outputs.result }}"
+          EXPLORE-LISTING-TYPE_RESULTS: "${{ steps.explore-listing-type.outputs.result }}"
+          AUTH-NO-DUP-STORAGE_RESULTS: "${{ steps.auth-no-dup-storage.outputs.result }}"
+          DASHBOARD-LISTING-TYPE_RESULTS: "${{ steps.dashboard-listing-type.outputs.result }}"
+          HOOKS-OR-SLIM-CHECKOUT_RESULTS: "${{ steps.hooks-or-slim-checkout.outputs.result }}"
+          BOOKING-FEE-CONSTANT_RESULTS: "${{ steps.booking-fee-constant.outputs.result }}"
+          UNIFIED-ERRORS_RESULTS: "${{ steps.unified-errors.outputs.result }}"
+          SHARED-PLACEHOLDER_RESULTS: "${{ steps.shared-placeholder.outputs.result }}"
+          API-BOOKING-FEE_RESULTS: "${{ steps.api-booking-fee.outputs.result }}"
+          EXTENDED-TESTS_RESULTS: "${{ steps.extended-tests.outputs.result }}"
+        with:
+          runners: frontend-tests,api-tests,removed-api-helpers,removed-misc-helpers,no-api-helpers-imports,checkout-payment-format,explore-cleaned,explore-listing-type,auth-no-dup-storage,dashboard-listing-type,hooks-or-slim-checkout,booking-fee-constant,unified-errors,shared-placeholder,api-booking-fee,extended-tests
